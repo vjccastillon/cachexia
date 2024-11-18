@@ -3,8 +3,19 @@ Episode Identification - BMI Trajectory
 
 This project automates the identification of cachexia episodes using BMI data trajectories. It processes patient BMI data, applies smoothing techniques, and identifies episodes of significant BMI decrease, which are indicative of cachexia.
 
-## Features
+## Data Requirements
+The following data formats:
 
+- **BMI Data File (`bmi_data.csv`)**: Should contain at least the following fields:
+  - `MRN` (Medical Record Number): Unique identifier for patients.
+  - `datetime`: Date of the BMI measurement.
+  - `BMI`: Body Mass Index measurement.
+
+- **Metadata File (`metadata.csv`)**: Should contain at least the following fields:
+  - `MRN` (Medical Record Number): Must correspond to the MRNs in the BMI data file.
+  - `Tumor Diagnosis Date`: Date of diagnosis, used to calculate the days since diagnosis.
+
+## Features
 ### `load_data.py` - Data Processing
 Clean and prepare BMI data through various functions:
 
@@ -28,5 +39,7 @@ Detect cachexia episodes based on a defined threshold of BMI loss over time:
 
 - **`merge_episodes(df, start_col, end_col)`**:
   - Merges overlapping episodes to streamline episode data.
+
+### `main.py` - Execution Script
 
   
