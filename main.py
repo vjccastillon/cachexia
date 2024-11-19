@@ -1,4 +1,5 @@
 
+
 import os
 import sys
 
@@ -17,6 +18,7 @@ from tqdm import tqdm
 
 from load_data import load_and_process_bmi_data, smooth_bmi_ewma
 from cachexia_identification import identify_cachexia_episodes, identify_recovery_episodes, merge_episodes
+from cac_qc import quality_control
 
 bmi_data_path = '/Users/castilv/Documents/Cachexia/cac_data/bmi_upd.csv'
 metadata_path = '/Users/castilv/Documents/Cachexia/cac_data/clean_metadata/metadata_clin_0930.csv'
@@ -24,14 +26,28 @@ output_path = '/Users/castilv/Documents/Cachexia/cac_data/output/'
 
 def main():
     bmi_data = load_and_process_bmi_data(bmi_data_path, metadata_path)
-    bmi_data = smooth_bmi_ewma(bmi_data, 'BMI', 0.2)
+    bmi_data = bmi_data.groupby('MRN').apply(lambda x: smooth_bmi_ewma(x, 'BMI', 0.2)).reset_index(drop=True)
+    bmi_data['log_smoothed_BMI'] = np.log(bmi_data['smoothed_BMI'])
+
     
-    episodes = identify_cachexia_episodes(bmi_data, 'Days_Since_Diagnosis', 'smoothed_BMI')
-    episodes = merge_episodes(episodes, 'start_day', 'end_day')
-    episodes = identify_recovery_episodes(bmi_data, episodes, 'Days_Since_Diagnosis', 'smoothed_BMI')
+    bmi_smoothed_file = output_path + 'bmi_smooth.csv'
+    bmi_data.to_csv(bmi_smoothed_file, index=False)
+    print(f"Smoothed BMI data saved to: {bmi_smoothed_file}")
     
-    episodes.to_csv(output_path + 'processed_episodes.csv', index=False)
-    print("Analysis complete. Processed episodes saved to:", output_path + 'processed_episodes.csv')
+    
+    df_episodes_all = pd.DataFrame()
+    for mrn in tqdm(bmi_data['MRN'].unique(), desc="Processing MRNs"):
+        df = bmi_data[bmi_data['MRN'] == mrn]
+        episodes = identify_cachexia_episodes(df, 'Days_Since_Diagnosis', 'log_smoothed_BMI')
+        episodes['MRN'] = mrn  # Ensure MRN is carried forward
+        df_episodes_all = pd.concat([df_episodes_all, episodes], ignore_index=True)
+
+    episodes_file = output_path + 'processed_episodes.csv'
+    df_episodes_all.to_csv(episodes_file, index=False)
+    print("Analysis complete. Processed episodes saved to:", episodes_file)
+
+    quality_control(episodes_file, output_path)
 
 if __name__ == "__main__":
     main()
+    
