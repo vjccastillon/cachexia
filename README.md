@@ -39,7 +39,7 @@ Detect cachexia episodes based on a defined threshold of BMI loss over time:
 
 - **`merge_episodes(df, start_col, end_col)`**:
   - Merges overlapping episodes to streamline episode data.
-### `cac_qc.py'- Quality Control
+### `cac_qc.py`- Quality Control
 
 - **`quality_control(episodes_file, output_path)`**:
   - Processes identified episodes to ensure each meets minimum duration (<15 days) and significance of weight loss (<2%).
