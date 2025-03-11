@@ -8,7 +8,6 @@ from datetime import datetime
 from tqdm import tqdm
 
 
-
 def identify_cachexia_episodes(df, time_col, bmi_col, recovery=True):
     '''
     Detect cachexia episodes, including start, onset, end, and recovery information.
@@ -28,19 +27,16 @@ def identify_cachexia_episodes(df, time_col, bmi_col, recovery=True):
         df_filtered = df_window[df_window[bmi_col] < b0 + np.log(0.95)]
         
         if not df_filtered.empty:
-            # Onset: First day when BMI falls below the threshold
             onset_day = df_filtered[time_col].min()
             onset_date = df_filtered.loc[df_filtered[time_col] == onset_day, 'datetime'].values[0] if not df_filtered.loc[df_filtered[time_col] == onset_day].empty else None
             #onset_bmi = df_filtered.loc[df_filtered[time_col] == onset_day, bmi_col].values[0] if not df_filtered.loc[df_filtered[time_col] == onset_day].empty else None
             onset_bmi= df_filtered.loc[df_filtered[time_col] == onset_day, 'smoothed_BMI'].values[0] if not df_filtered.loc[df_filtered[time_col] == onset_day].empty else None
 
-            # End of the episode: Last day where BMI is still below the threshold
             max_t = df_filtered[time_col].max()
             end_date = df_filtered.loc[df_filtered[time_col] == max_t, 'datetime'].values[0] if not df_filtered.loc[df_filtered[time_col] == max_t].empty else None
             #end_bmi = df_filtered.loc[df_filtered[time_col] == max_t, bmi_col].values[0] if not df_filtered.loc[df_filtered[time_col] == max_t].empty else None
             end_bmi = df_filtered.loc[df_filtered[time_col] == max_t, 'smoothed_BMI'].values[0] if not df_filtered.loc[df_filtered[time_col] == max_t].empty else None
  
-            # Append episode information
             results.append({
                 'start_day': t0,
                 'start_date': current_date,
@@ -53,9 +49,7 @@ def identify_cachexia_episodes(df, time_col, bmi_col, recovery=True):
                 'end_bmi': end_bmi
             })
     
-    # If no results (i.e., no episodes) found, append a row with 'None' values for this MRN
     if len(results) == 0:
-        # You can choose what columns to include if no episodes are detected
         results.append({
             'start_day': None,
             'start_date': None,
@@ -139,11 +133,9 @@ def merge_episodes(df, start_col, end_col):
             current_episode['end_date'] = df.loc[i, 'end_date']
             current_episode['end_bmi'] = df.loc[i, 'end_bmi']
         else:
-            # No overlap, append the previous episode and start a new one
             merged_episodes.append(current_episode)
             current_episode = df.iloc[i].to_dict()
 
-    # Add the last episode
     if current_episode is not None:
         merged_episodes.append(current_episode)
 
