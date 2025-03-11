@@ -36,6 +36,7 @@ length(unique(spans_labtests$MRN))
 spans_labtests[names(spans_labtests) %in% labs2use] <- lapply(spans_labtests[names(spans_labtests) %in% labs2use], function(x) {
   (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
 })
+
 results_cc <- list()
 
 for (cancer_type in c2use$CANCER_TYPE_DETAILED) {
@@ -44,7 +45,6 @@ for (cancer_type in c2use$CANCER_TYPE_DETAILED) {
                         upper_ci = numeric(), p = numeric(), stringsAsFactors = FALSE)
   
   for(test_name in labs2use) {
-    print(paste(cancer_type, test_name, sep=": ")) 
     
     current_data <- spans_labtests %>% 
       filter(CANCER_TYPE_DETAILED == cancer_type) %>%  
@@ -55,9 +55,9 @@ for (cancer_type in c2use$CANCER_TYPE_DETAILED) {
       unique_sex <- length(unique(current_data$GENDER))
       
       if (unique_sex > 1) {
-        formula <- as.formula(paste("span ~ result + GENDER + (1 | MRN)"))
+        formula <- as.formula(paste("span ~ result + GENDER + start_day+ (1 | MRN)"))
       } else {
-        formula <- as.formula(paste("span ~ result  + (1 | MRN)"))
+        formula <- as.formula(paste("span ~ result  + start_day + (1 | MRN)"))
       }
       
       model <- tryCatch({
@@ -71,7 +71,6 @@ for (cancer_type in c2use$CANCER_TYPE_DETAILED) {
         coef_summary <- summary(model)$coefficients
         log_or <- coef_summary["result", "Estimate"]
         se_log_or <- coef_summary["result", "Std. Error"]
-        
         odds_ratio <- exp(log_or)
         lower_ci <- exp(log_or - 1.96 * se_log_or)
         upper_ci <- exp(log_or + 1.96 * se_log_or)
@@ -101,7 +100,7 @@ results= fread('../cac_data/glmm_results_labs_0307.csv')
 results <- results %>%
   mutate(cancer_type = str_replace(cancer_type, "Chronic Lymphocytic Leukemia.*", "CLL/SLL"))
 
-log_or_limits <- c(-1, 0.7)
+log_or_limits <- range(results$log_or, na.rm = TRUE)
 results$log_or_capped <- pmax(pmin(results$log_or, log_or_limits[2]), log_or_limits[1])
 results$adjusted_p <- p.adjust(results$p, method = "BH")
 
@@ -139,7 +138,7 @@ ggsave(file = "EpsMXFX_labvalues_0307.pdf", p, width = 14, height = 12)
 library(ggplot2)
 library(dplyr)
 library(patchwork)  
-log_or_limits <- c(-1.2, 0.7)
+log_or_limits <- range(results$log_or, na.rm = TRUE)
 results <- results %>%
   mutate(test = factor(test, levels = unique(results$test)))
 
