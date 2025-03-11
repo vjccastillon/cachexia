@@ -92,14 +92,19 @@ def identify_recovery_episodes(patient_data, merged_episodes_df, time_col, bmi_c
             else:
                 t1 = patient_data[time_col].max()
                 
-            # Get the BMI at the end of the episode
-            end_index = patient_data.loc[patient_data[time_col] == t0].index[0]
-            b0 = patient_data[bmi_col][end_index]
-
-            # Detect recovery episodes: BMI greater than 5% from the lowest value at the end of the episode
-            recovery_data = patient_data[(patient_data[time_col] >= t0) & (patient_data[time_col] <= t1)
+            #end_index = patient_data.loc[patient_data[time_col] == t0].index[0]
+            #b0 = patient_data[bmi_col][end_index]
+            #recovery_data = patient_data[(patient_data[time_col] >= t0) & (patient_data[time_col] <= t1)
                                          & (patient_data[bmi_col] > b0 + np.log(1.05))]
             
+            episode_data = patient_data[(patient_data[time_col] >= merged_episodes_df['start_day'][i]) &
+                            (patient_data[time_col] <= merged_episodes_df['end_day'][i])]
+
+            b_min = episode_data[bmi_col].min()  # Get the lowest BMI in the episode
+
+            # Detect recovery episodes: BMI must be > 5% from the lowest value (`b_min`)
+            recovery_data = patient_data[(patient_data[time_col] >= t0) & (patient_data[time_col] <= t1)
+                             & (patient_data[bmi_col] > b_min + np.log(1.05))]
             if not recovery_data.empty:
                 recovery_day = recovery_data[time_col].min()
                 recovery_date = recovery_data.loc[recovery_data[time_col] == recovery_day, 'datetime'].values[0]
